@@ -41,6 +41,22 @@ def check_regex_match(string, lines, regex):
     # return line number of match
     return get_line_number(lines, pos)
 
+# a function to print a string across multiple lines, with each line constrained by a character width variable, that does not break words
+def print_multiline(string, width=80):
+    # split string into words
+    words = string.split()
+    current_line_length = 0
+    line_string = "\t"
+    for word in words:
+        current_line_length += len(word)
+        if current_line_length > width:
+            print(line_string)
+            current_line_length = 2 + len(word)
+            line_string = "\t  " + word
+        else:
+            line_string += " " + word
+    print(line_string)
+
 # a function to check for text patterns that look like function names containing the word "random"
 def check_random_function(string, lines):
     print("\nChecking for possible random functions")
@@ -49,9 +65,9 @@ def check_random_function(string, lines):
     pattern = re.compile(r"\s+\w*rand\w*\(")
     line_number = check_regex_match(string, lines, pattern)
     if line_number != -1:
-        print("\t! Line {} contains a possible random function definition or call - be wary of relying on on-chain pseudorandomness for any critical functionality".format(line_number))
+        print_multiline("\t! Line {} contains a possible random function definition or call - be wary of relying on on-chain pseudorandomness for any critical functionality".format(line_number))
     else:
-        print("\t- No random functions detected by this test")
+        print_multiline("\t- No random functions detected by this test")
 
 # a function to check for text patterns that look like loops containing transfers
 def check_transfer_loop(string, lines):
@@ -61,21 +77,21 @@ def check_transfer_loop(string, lines):
     for_pattern = re.compile(r"for\s*\([\w\s]+\;\s*[\w\s\<\>\=\.\(\)]+\;\s*[\w\s\+\-\(\)]+\)\s*\{[\w\s\\\(\)\[\]\.]+(transfer\(|send\()")
     line_number = check_regex_match(string, lines, for_pattern)
     if line_number != -1:
-        print("\t! For loop construct on line {} appears to contain a transfer - disbursement of funds could be stalled by an attacker".format(line_number))
+        print_multiline("\t! For loop construct on line {} appears to contain a transfer - disbursement of funds could be stalled by an attacker".format(line_number))
     else:
-        print("\t- No for loops containing transfers detected by this test")
+        print_multiline("\t- No for loops containing transfers detected by this test")
     do_pattern = re.compile(r"do\s*\{[\w\s\\\(\)\[\]\.]+(transfer\(|send\()")
     line_number = check_regex_match(string, lines, do_pattern)
     if line_number != -1:
-        print("\t! Do loop construct on line {} appears to contain a transfer - disbursement of funds could be stalled by an attacker".format(line_number))
+        print_multiline("\t! Do loop construct on line {} appears to contain a transfer - disbursement of funds could be stalled by an attacker".format(line_number))
     else:
-        print("\t- No do loops containing transfers detected by this test")
+        print_multiline("\t- No do loops containing transfers detected by this test")
     while_pattern = re.compile(r"while\s*\([\w\s\<\>\=\.\(\)]+\)\s*\{[\w\s\\\(\)\[\]\.]+(transfer\(|send\()")
     line_number = check_regex_match(string, lines, while_pattern)
     if line_number != -1:
-        print("\t! While loop construct on line {} appears to contain a transfer - disbursement of funds could be stalled by an attacker".format(line_number))
+        print_multiline("\t! While loop construct on line {} appears to contain a transfer - disbursement of funds could be stalled by an attacker".format(line_number))
     else:
-        print("\t- No while loops containing transfers detected by this test")
+        print_multiline("\t- No while loops containing transfers detected by this test")
 
 # a function to check for blocks that look like functions with code following a required transfer
 def check_required_transfer(string, lines):
@@ -86,9 +102,9 @@ def check_required_transfer(string, lines):
     pattern = re.compile(r"require\(.+\.(transfer|send)\(.*\)\)\;")
     line_number = check_regex_match(string, lines, pattern)
     if line_number != -1:
-        print("\t! Required transfer detected on line {} - any subsequent code contained in this function may be susceptible to DOS".format(line_number))
+        print_multiline("\t! Required transfer detected on line {} - any subsequent code contained in this function may be susceptible to DOS".format(line_number))
     else:
-        print("\t- No required transfers detected by this test")
+        print_multiline("\t- No required transfers detected by this test")
 
 # a function to check for required or asserted balance operations
 def check_balance_requirement(string, lines):
@@ -98,9 +114,9 @@ def check_balance_requirement(string, lines):
     pattern = re.compile(r"(require|assert)\(.+\.(balanceOf|balance)\s*[\<\>\=]+\s*[\w\d]+\)\;")
     line_number = check_regex_match(string, lines, pattern)
     if line_number != -1:
-        print("\t! Balance requirement detected on line {} - ensure that contract functionality does not depend on exact ether balance requirements due to forced ether sends".format(line_number))
+        print_multiline("\t! Balance requirement detected on line {} - ensure that contract functionality does not depend on exact ether balance requirements due to forced ether sends".format(line_number))
     else:
-        print("\t- No ether balance requirements detected by this test")
+        print_multiline("\t- No ether balance requirements detected by this test")
 
 # a function to check for potentially unsafe integer arithmetic
 def check_integer_arithmetic(string, lines):
@@ -110,9 +126,9 @@ def check_integer_arithmetic(string, lines):
     pattern = re.compile(r"[\w\d]+\s*([\+\-\*\/]|\+\=|\-\=|\*\=|\/\=)\s*[\w\d]+\s*\;")
     line_number = check_regex_match(string, lines, pattern)
     if line_number != -1:
-        print("\t! Raw integer arithmetic detected on line {} - this is unsafe by default in Solidity; using a safe math library is recommended".format(line_number))
+        print_multiline("\t! Raw integer arithmetic detected on line {} - this is unsafe by default in Solidity; using a safe math library is recommended".format(line_number))
     else:
-        print("\t- No raw integer arithmetic detected by this test")
+        print_multiline("\t- No raw integer arithmetic detected by this test")
 
 # a function to check for reentrancy vulnerability due to use of call.value
 def check_call_value(string, lines):
@@ -122,11 +138,12 @@ def check_call_value(string, lines):
     pattern = re.compile(r"call\.value\(")
     line_number = check_regex_match(string, lines, pattern)
     if line_number != -1:
-        print("\t! Use of call.value() detected on line {} - any subsequent code modifying state is vulnerable to reentrancy attacks; use transfer() or send() instead".format(line_number))
+        print_multiline("\t! Use of call.value() detected on line {} - any subsequent code modifying state is vulnerable to reentrancy attacks; use transfer() or send() instead".format(line_number))
     else:
-        print("\t- No reentrancy vulnerability due to use of call.value() detected by this test")
+        print_multiline("\t- No reentrancy vulnerability due to use of call.value() detected by this test")
 
 
+# not covered here: variable shadowing (compiler problem), race conditions (requires blockchain context)
 
 # main function
 def main():
