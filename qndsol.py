@@ -3,6 +3,7 @@ import os
 import re
 
 # helper functions to perform regex-based checks, and print findings with line number info
+# these return only the first instance of the potential issue found
 
 # a function to perform a regex match on a provided string using a provided regex, returning the character position of the start of the match
 def regex_match(string, regex):
@@ -142,6 +143,20 @@ def check_call_value(string, lines):
     else:
         print_multiline("\t- No reentrancy vulnerability due to use of call.value() detected by this test")
 
+def check_silent_fail_on_external_call(string, lines):
+    print("\nChecking for possible silent failure on external call")
+    print("-----------------------------------------------------\n")
+    # regex pattern to match (possible) silent failure on external call
+    send_pattern = re.compile(r"[\w\d]+\.send\(")
+    send_line_number = check_regex_match(string, lines, send_pattern)
+    if send_line_number != -1:
+        # also see if this send() is checked
+        checked_send_pattern = re.compile(r"(assert|require)\(\s*[\w\d\.]+\.send\([\w\d]+\)\s*\)\s*\;")
+        checked_send_line_number = check_regex_match(string, lines, checked_send_pattern)
+        if checked_send_line_number != send_line_number:
+            print_multiline("\t! Use of send() with no requirement detected on line {} - external call may fail silently; recommended to use transfer() or explicitly handle the return from send()".format(send_line_number))
+            return
+    print_multiline("\t- No silent failure on external call detected by this test")
 
 # not covered here: variable shadowing (compiler problem), race conditions (requires blockchain context)
 
@@ -169,6 +184,7 @@ def main():
     check_balance_requirement(file_contents, lines)
     check_integer_arithmetic(file_contents, lines)
     check_call_value(file_contents, lines)
+    check_silent_fail_on_external_call(file_contents, lines)
 
     print('\n')
 
