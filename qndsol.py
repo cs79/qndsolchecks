@@ -43,13 +43,29 @@ def check_regex_match(string, lines, regex):
 
 # a function to check for text patterns that look like function names containing the word "random"
 def check_random_function(string, lines):
+    print("\nChecking for possible random functions\n")
     # regex pattern to match (possible) function names that look like they might be randomness functions
     pattern = re.compile(r"\s+\w*rand\w*\(")
     line_number = check_regex_match(string, lines, pattern)
     if line_number != -1:
-        print("Line {} contains a possible random function - be wary of relying on on-chain pseudorandomness for any critical functionality".format(line_number))
+        print("Line {} contains a possible random function definition or call - be wary of relying on on-chain pseudorandomness for any critical functionality".format(line_number))
 
-
+# a function to check for text patterns that look like loops containing transfers
+def check_transfer_loop(string, lines):
+    print("\nChecking for possible loops containing transfers\n")
+    # regex pattern to match (possible) loops that contain transfers
+    for_pattern = re.compile(r"for\s*\([\w\s]+\;\s*[\w\s\<\>\=\.\(\)]+\;\s*[\w\s\+\-\(\)]+\)\s*\{[\w\s\\\(\)\[\]\.]+(transfer\(|send\()")
+    line_number = check_regex_match(string, lines, for_pattern)
+    if line_number != -1:
+        print("For loop construct on line {} appears to contain a transfer - disbursement of funds could be stalled by an attacker".format(line_number))
+    do_pattern = re.compile(r"do\s*\{[\w\s\\\(\)\[\]\.]+(transfer\(|send\()")
+    line_number = check_regex_match(string, lines, do_pattern)
+    if line_number != -1:
+        print("Do loop construct on line {} appears to contain a transfer - disbursement of funds could be stalled by an attacker".format(line_number))
+    while_pattern = re.compile(r"while\s*\([\w\s\<\>\=\.\(\)]+\)\s*\{[\w\s\\\(\)\[\]\.]+(transfer\(|send\()")
+    line_number = check_regex_match(string, lines, while_pattern)
+    if line_number != -1:
+        print("While loop construct on line {} appears to contain a transfer - disbursement of funds could be stalled by an attacker".format(line_number))
 
 # main function
 def main():
@@ -69,8 +85,8 @@ def main():
     file_contents = ''.join(lines)
     
     # run the various checks
-    print('\n')
     check_random_function(file_contents, lines)
+    check_transfer_loop(file_contents, lines)
 
     print('\n')
 
