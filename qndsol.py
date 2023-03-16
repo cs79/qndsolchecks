@@ -143,6 +143,7 @@ def check_call_value(string, lines):
     else:
         print_multiline("\t- No reentrancy vulnerability due to use of call.value() detected by this test")
 
+# a function to check for possible silent failures on external calls
 def check_silent_fail_on_external_call(string, lines):
     print("\nChecking for possible silent failure on external call")
     print("-----------------------------------------------------\n")
@@ -157,6 +158,22 @@ def check_silent_fail_on_external_call(string, lines):
             print_multiline("\t! Use of send() with no requirement detected on line {} - external call may fail silently; recommended to use transfer() or explicitly handle the return from send()".format(send_line_number))
             return
     print_multiline("\t- No silent failure on external call detected by this test")
+
+# a function to check for unprotected function use (e.g. no modifier, public functions)
+def check_unprotected_function_use(string, lines):
+    print("\nChecking for unprotected function use")
+    print("-------------------------------------\n")
+    # regex pattern to match (possible) unprotected function use - only detects functions explicitly marked public
+    public_function_pattern = re.compile(r"function\s+\w+\([\w\s]*\)[\w\s\(\)]*public[\w\s\(\)]*\{")
+    public_function_line_number = check_regex_match(string, lines, public_function_pattern)
+    if public_function_line_number != -1:
+        # also see if there is a modifier the function starting on the same line
+        modifier_pattern = re.compile(r"function\s+\w+\([\w\s]*\)[\w\s\(\)]*public\s*(pure|view|payable|returns\(.*\)|)*\s*[^\s]+\s*\{")
+        modifier_line_number = check_regex_match(string, lines, modifier_pattern)
+        if modifier_line_number != public_function_line_number:
+            print_multiline("\t! Possible unprotected function use detected on line {} - function is public and may be called by anyone; recommended to use a modifier or make the function private if possible".format(public_function_line_number))
+            return
+        print_multiline("\t- No unprotected function use detected by this test")
 
 # not covered here: variable shadowing (compiler problem), race conditions (requires blockchain context)
 
@@ -185,6 +202,7 @@ def main():
     check_integer_arithmetic(file_contents, lines)
     check_call_value(file_contents, lines)
     check_silent_fail_on_external_call(file_contents, lines)
+    check_unprotected_function_use(file_contents, lines)
 
     print('\n')
 
