@@ -102,6 +102,30 @@ def check_balance_requirement(string, lines):
     else:
         print("\t- No ether balance requirements detected by this test")
 
+# a function to check for potentially unsafe integer arithmetic
+def check_integer_arithmetic(string, lines):
+    print("\nChecking for possible unsafe integer arithmetic")
+    print("-----------------------------------------------\n")
+    # regex pattern to match (possible) unsafe integer arithmetic
+    pattern = re.compile(r"[\w\d]+\s*([\+\-\*\/]|\+\=|\-\=|\*\=|\/\=)\s*[\w\d]+\s*\;")
+    line_number = check_regex_match(string, lines, pattern)
+    if line_number != -1:
+        print("\t! Raw integer arithmetic detected on line {} - this is unsafe by default in Solidity; using a safe math library is recommended".format(line_number))
+    else:
+        print("\t- No raw integer arithmetic detected by this test")
+
+# a function to check for reentrancy vulnerability due to use of call.value
+def check_call_value(string, lines):
+    print("\nChecking for possible reentrancy vulnerability due to use of call.value()")
+    print("-------------------------------------------------------------------------\n")
+    # regex pattern to match (possible) reentrancy vulnerability due to use of call.value
+    pattern = re.compile(r"call\.value\(")
+    line_number = check_regex_match(string, lines, pattern)
+    if line_number != -1:
+        print("\t! Use of call.value() detected on line {} - any subsequent code modifying state is vulnerable to reentrancy attacks; use transfer() or send() instead".format(line_number))
+    else:
+        print("\t- No reentrancy vulnerability due to use of call.value() detected by this test")
+
 
 
 # main function
@@ -126,6 +150,8 @@ def main():
     check_transfer_loop(file_contents, lines)
     check_required_transfer(file_contents, lines)
     check_balance_requirement(file_contents, lines)
+    check_integer_arithmetic(file_contents, lines)
+    check_call_value(file_contents, lines)
 
     print('\n')
 
