@@ -67,6 +67,18 @@ def check_transfer_loop(string, lines):
     if line_number != -1:
         print("While loop construct on line {} appears to contain a transfer - disbursement of funds could be stalled by an attacker".format(line_number))
 
+# a function to check for blocks that look like functions with code following a required transfer
+def check_required_transfer(string, lines):
+    print("\nChecking for possible functions containing required transfers\n")
+    # regex pattern to match (possible) functions that contain required transfers
+    # pattern = re.compile(r"function\s+\w+\([\w\s]*\)[\w\s]+\{[\w\s\\]*require\(.+\.(transfer|send)\(.*\)\)\;") # unclear why this does not work
+    pattern = re.compile(r"require\(.+\.(transfer|send)\(.*\)\)\;")
+    line_number = check_regex_match(string, lines, pattern)
+    if line_number != -1:
+        print("Required transfer detected on line {} - subsequent code contained in this function is susceptible to DOS".format(line_number))
+
+
+
 # main function
 def main():
     # get filename variable from command line argument
@@ -87,6 +99,7 @@ def main():
     # run the various checks
     check_random_function(file_contents, lines)
     check_transfer_loop(file_contents, lines)
+    check_required_transfer(file_contents, lines)
 
     print('\n')
 
