@@ -175,6 +175,22 @@ def check_unprotected_function_use(string, lines):
             return
         print_multiline("\t- No unprotected function use detected by this test")
 
+# a function to check if contracts do not have an explicit constructor
+def check_missing_constructor(string, lines):
+    print("\nChecking for missing constructor")
+    print("--------------------------------\n")
+    # regex pattern to match contract declaration
+    contract_pattern = re.compile(r"contract\s+\w+[\w\s]*\{")
+    contract_line_number = check_regex_match(string, lines, contract_pattern)
+    if contract_line_number != -1:
+        # also check if there is a constructor pattern match starting at the same line
+        constructor_pattern = re.compile(r"contract\s+\w+[\w\s]*\{.*constructor\(.*\}")
+        constructor_line_number = check_regex_match(string, lines, constructor_pattern)
+        if constructor_line_number != contract_line_number:
+            print_multiline("\t! Contract declared on line {} not detected as having an explicit constructor - take care with default constructors to ensure correct contract behavior".format(contract_line_number))
+            return
+    print_multiline("\t- No contract without explicit constructor detected by this test")
+
 # not covered here: variable shadowing (compiler problem), race conditions (requires blockchain context)
 
 # main function
@@ -203,7 +219,8 @@ def main():
     check_call_value(file_contents, lines)
     check_silent_fail_on_external_call(file_contents, lines)
     check_unprotected_function_use(file_contents, lines)
-
+    check_missing_constructor(file_contents, lines)
+    # other checks could go here as desired
     print('\n')
 
 if __name__ == '__main__':
