@@ -145,8 +145,8 @@ def check_call_value(string, lines):
 
 # a function to check for possible silent failures on external calls
 def check_silent_fail_on_external_call(string, lines):
-    print("\nChecking for possible silent failure on external call")
-    print("-----------------------------------------------------\n")
+    print("\nChecking for possible silent failure on external call using send()")
+    print("------------------------------------------------------------------\n")
     # regex pattern to match (possible) silent failure on external call
     send_pattern = re.compile(r"[\w\d]+\.send\(")
     send_line_number = check_regex_match(string, lines, send_pattern)
@@ -157,7 +157,7 @@ def check_silent_fail_on_external_call(string, lines):
         if checked_send_line_number != send_line_number:
             print_multiline("\t! Use of send() with no requirement detected on line {} - external call may fail silently; recommended to use transfer() or explicitly handle the return from send()".format(send_line_number))
             return
-    print_multiline("\t- No silent failure on external call detected by this test")
+    print_multiline("\t- No unchecked external send() detected by this test")
 
 # a function to check for unprotected function use (e.g. no modifier, public functions)
 def check_unprotected_function_use(string, lines):
@@ -173,7 +173,7 @@ def check_unprotected_function_use(string, lines):
         if modifier_line_number != public_function_line_number:
             print_multiline("\t! Possible unprotected function use detected on line {} - function is public and may be called by anyone; recommended to use a modifier or make the function private if possible".format(public_function_line_number))
             return
-        print_multiline("\t- No unprotected function use detected by this test")
+    print_multiline("\t- No unprotected function use detected by this test")
 
 # a function to check if contracts do not have an explicit constructor
 def check_missing_constructor(string, lines):
